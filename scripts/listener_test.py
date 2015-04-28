@@ -18,7 +18,12 @@ def central_pos(x):
 	return (x[0]+x[1]+x[2]+x[3])/len(x)
 	
 def rotation(xy):
-	alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2])
+	if xy[0]<xy[1]:
+		print 'obrot w prawo'
+		alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+	else:
+		print 'obrot w lewo'
+		alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
 	return math.atan(alpha)
 	
 	
@@ -39,8 +44,8 @@ def scale_rotation(x,y):
 			dist_max = dist
 			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
 	print 'Scale: ' + str(dist_min) + ' = 3,1cm'
-	move_x=((655-central_pos(x))*3.1)/dist_min
-	move_y=((637-central_pos(y))*3.1)/dist_min
+	move_y=((655-central_pos(x))*3.1)/dist_min
+	move_x=((637-central_pos(y))*3.1)/dist_min
 	print 'Distance x: ' + str(move_x) + ' cm'
 	print 'Distance y: ' + str(move_y) + ' cm'
 	move_x=move_x/100
