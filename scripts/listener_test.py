@@ -77,11 +77,11 @@ def listener():
     # run simultaneously.
     rospy.init_node('listenerbricks', anonymous=True)
 
-    rospy.Subscriber("float32MultiArray", Float32MultiArray, callback)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
 
 if __name__ == '__main__':
+	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback)
 	listener()
 
