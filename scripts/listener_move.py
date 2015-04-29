@@ -4,6 +4,7 @@
 from irpos import *
 import rospy
 import math
+import sys
 
 from std_msgs.msg import Float32MultiArray
 
@@ -28,13 +29,17 @@ def central_pos(x):
 	return (x[0]+x[1]+x[2]+x[3])/len(x)
 	
 def rotation(xy):
-	if xy[0]<xy[1]:
+	if xy[1]<xy[0]:
 		print 'obrot w prawo'
-		alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+		alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
+		print math.atan(alpha)
+		if math.atan(alpha)<-1:
+			print "PRZEKROCZONE"
+			return math.atan(alpha)+3.1415
 	else:
 		print 'obrot w lewo'
-		#alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
-		alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
+		alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
+		print math.atan(alpha)
 	return math.atan(alpha)
 	
 	
@@ -78,7 +83,7 @@ def callback(data):
 	scale_rotation(data.data[1:5],data.data[5:9])
 	if first_time==0:
 		print "FIRST STAGE"
-		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(4.0,4.0,4.0),Vector3(0.0,0.0,0.0)))
+		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
 		myjoint = irpos.get_joint_position()
 		lst = list(myjoint)
 		lst[5] = lst[5]-rads
@@ -94,25 +99,36 @@ def callback(data):
 		return
 		
 	if first_time==5:
+		print "ROTATING"
+		myjoint = irpos.get_joint_position()
+		lst = list(myjoint)
+		lst[5] = lst[5]-rads
+		myjoint = tuple(lst)
+		print myjoint
+		irpos.move_to_joint_position(myjoint, 8.0)
+		sys.atexit()
+		
+	if first_time==1:
 		print "SECOND STAGE"
-		if move_x<0.03:
-			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(move_x, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(4.0,4.0,4.0),Vector3(0.0,0.0,0.0)))
-		if move_y<0.03:
-			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(0, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(4.0,4.0,4.0),Vector3(0.0,0.0,0.0)))
+		if move_x<0.03 and move_x>0.005:
+			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(move_x, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
+		if move_y<0.03 and move_y>0.005:
+			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(0, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
 		first_time=first_time+1
 		return
 		
-	if first_time==1:
+	if first_time==2:
 		print "THIRD STAGE"
 		irpos.tfg_to_joint_position(0.09, 5.0)
-		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
+		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 		irpos.tfg_to_joint_position(0.073, 5.0)
 		irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
 		first_time=first_time+1
 		return
 		
 	if first_time==3:
-		quit()
+		sys.atexit()
 		
 def listener():
 
@@ -129,7 +145,64 @@ def listener():
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()
-
+    
+def move_operation(data):
+	global first_time
+	global move_x
+	global move_y
+	global rads
+	rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
+	print [central_pos(data.data[1:5]),central_pos(data.data[5:9])]
+	scale_rotation(data.data[1:5],data.data[5:9])
+	if first_time==0:
+		print "FIRST STAGE"
+		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
+		myjoint = irpos.get_joint_position()
+		lst = list(myjoint)
+		lst[5] = lst[5]-rads
+		myjoint = tuple(lst)
+		print myjoint
+		irpos.move_to_joint_position(myjoint, 8.0)
+		first_time=first_time+1
+		rospy.sleep(1)
+		return
+		
+	if first_time==5:
+		print "WAITING"
+		return
+		
+	if first_time==5:
+		print "ROTATING"
+		myjoint = irpos.get_joint_position()
+		lst = list(myjoint)
+		lst[5] = lst[5]-rads
+		myjoint = tuple(lst)
+		print myjoint
+		irpos.move_to_joint_position(myjoint, 8.0)
+		sys.atexit()
+		
+	if first_time==1:
+		print "SECOND STAGE"
+		if move_x<0.03 and move_x>0.005:
+			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(move_x, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
+		if move_y<0.03 and move_y>0.005:
+			irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(0, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
+		first_time=first_time+1
+		return
+		
+	if first_time==2:
+		print "THIRD STAGE"
+		irpos.tfg_to_joint_position(0.09, 5.0)
+		irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+		irpos.tfg_to_joint_position(0.073, 5.0)
+		irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(5.0,5.0,5.0),Vector3(0.0,0.0,0.0)))
+		first_time=first_time+1
+		return
+		
+	if first_time==3:
+		sys.atexit()
+		
 if __name__ == '__main__':
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)

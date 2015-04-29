@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 
+from irpos import *
 import rospy
 import math
 
@@ -18,12 +19,17 @@ def central_pos(x):
 	return (x[0]+x[1]+x[2]+x[3])/len(x)
 	
 def rotation(xy):
-	if xy[0]<xy[1]:
+	if xy[1]<xy[0]:
 		print 'obrot w prawo'
-		alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+		alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
+		print math.atan(alpha)
+		if math.atan(alpha)<-1:
+			print "PRZEKROCZONE"
+			return math.atan(alpha)+3.1415
 	else:
 		print 'obrot w lewo'
 		alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
+		print math.atan(alpha)
 	return math.atan(alpha)
 	
 	
@@ -56,11 +62,11 @@ def scale_rotation(x,y):
 			
 	
 def callback(data):
+	global rads
 	rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
 	print [central_pos(data.data[1:5]),central_pos(data.data[5:9])]
 	scale_rotation(data.data[1:5],data.data[5:9])
 	print 'test ' + str(move_x) 
-	
 	
 def listener():
 
@@ -77,5 +83,5 @@ def listener():
     rospy.spin()
 
 if __name__ == '__main__':
-    listener()
+	listener()
 
