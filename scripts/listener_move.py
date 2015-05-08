@@ -19,7 +19,15 @@ rads=0
 global first_time
 first_time=0
 global BlockPos
+global Board
+global Reds
+global Greens
+global Blues
 BlockPos=[]
+Board=[]
+Reds=[]
+Greens=[]
+Blues=[]
 
 def createPose(x, y, z, ox, oy, oz, ow):
 	position = Point(x, y, z)
@@ -66,7 +74,7 @@ def scale_rotation(y,x):
 			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
 	#print 'Scale: ' + str(dist_min) + ' = 3,1cm'
 	move_x=((655-central_pos(x))*3.1)/dist_min #655
-	move_y=((648-central_pos(y))*3.1)/dist_min #637
+	move_y=((650-central_pos(y))*3.1)/dist_min #637
 	#print 'Distance x: ' + str(move_x) + ' cm'
 	#print 'Distance y: ' + str(move_y) + ' cm'
 	move_y=-move_y/100
@@ -171,7 +179,7 @@ def push_brick():
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#dol prawo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#dol lewo
@@ -179,7 +187,7 @@ def push_brick():
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#gora lewo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#push
