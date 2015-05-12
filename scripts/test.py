@@ -5,7 +5,7 @@ if __name__ == '__main__':
 	#irpos = IRPOS("IRpOS", "Irp6p", 6)
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	
-	#irpos.move_to_synchro_position(10.0)
+	irpos.move_to_synchro_position(10.0)
 
 	#poruszanie motorami	
 	#irpos.move_to_motor_position([6.116680896539328, 8.65822935329347, -34.55437759683414, 191.310097771172, 140.33868871754868, 745.4779455482828], 10.0)
@@ -42,9 +42,9 @@ if __name__ == '__main__':
 	#przeies sie do pozycji 1
 	#irpos.move_to_motor_position([1.8802432031734913, 27.60674544342031, -17.354157818430018, 151.310097771172, 70.3308347359147, 758.4904223194518], 10.0)
 
-	print irpos.get_joint_position()
-	irpos.tfg_to_joint_position(0.09, 5.0)
-	irpos.tfg_to_joint_position(0.073, 5.0)
+	#print irpos.get_joint_position()
+	#irpos.tfg_to_joint_position(0.09, 5.0)
+	#irpos.tfg_to_joint_position(0.073, 5.0)
 
 	#print irpos.get_cartesian_pose()
 	#print irpos.get_tfg_joint_position()

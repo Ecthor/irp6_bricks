@@ -74,7 +74,7 @@ def scale_rotation(y,x):
 			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
 	#print 'Scale: ' + str(dist_min) + ' = 3,1cm'
 	move_x=((655-central_pos(x))*3.1)/dist_min #655
-	move_y=((650-central_pos(y))*3.1)/dist_min #637
+	move_y=((655-central_pos(y))*3.1)/dist_min #637 650
 	#print 'Distance x: ' + str(move_x) + ' cm'
 	#print 'Distance y: ' + str(move_y) + ' cm'
 	move_y=-move_y/100
@@ -191,13 +191,13 @@ def push_brick():
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#push
-	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
 	
 	#go up
 	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, -0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
 	#push
-	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
 		
 def service_position():
 	print irpos.get_joint_position()
