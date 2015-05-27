@@ -16,8 +16,22 @@ lista=[]
 for a in position:
 	if a!='':
 		lista.append(a.split(','))
-print(lista)
 
+lista2=[]
+for a in lista:
+	temp=[]
+	for b in a:
+		temp.append(b.split(' '))
+	lista2.append(temp)
+print lista2
 
+#PRINT
+out=''
+for a in lista2:
+	for b in a:
+		for x in range(0,int(b[0])):
+			out=out+b[1]
+	out = out + '\n'
+print out
 
 file.close()

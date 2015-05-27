@@ -13,7 +13,16 @@ global move_y
 move_y=0
 global rads
 rads=0
-
+global BlockPos
+global Board
+global Reds
+global Greens
+global Blues
+BlockPos=[]
+Board=[]
+Reds=[]
+Greens=[]
+Blues=[]
 def central_pos(x):
 	print x
 	return (x[0]+x[1]+x[2]+x[3])/len(x)
@@ -32,6 +41,11 @@ def rotation(xy):
 		print math.atan(alpha)
 	return math.atan(alpha)
 	
+def rearrange(data):
+	for i in data:
+		for k in range(0,9):
+			if 
+	return "test"
 	
 def scale_rotation(x,y):
 	global move_x
@@ -67,6 +81,7 @@ def callback(data):
 	print [central_pos(data.data[1:5]),central_pos(data.data[5:9])]
 	scale_rotation(data.data[1:5],data.data[5:9])
 	print 'test ' + str(move_x) 
+	print(rearrange(data.data))
 	
 def listener():
 
