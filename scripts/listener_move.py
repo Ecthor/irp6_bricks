@@ -6,10 +6,12 @@ import rospy
 import math
 import sys
 import threading
-
+from Tkinter import Tk
+from tkFileDialog import askopenfilename
 from std_msgs.msg import Float32MultiArray
 
 DataLock = threading.Lock()
+TableLock = threading.Lock()
 global move_x
 move_x=0
 global move_y
@@ -20,9 +22,12 @@ global first_time
 first_time=0
 global BlockPos
 global Board
+global Overboard
 global Reds
 global Greens
 global Blues
+#For init
+Overboard=-1
 BlockPos=[]
 Board=[]
 Reds=[]
@@ -54,6 +59,84 @@ def rotation(xy):
 		print math.atan(alpha)
 	return math.atan(alpha)
 	
+def choose_block(colour, siz):
+	if colour == "b":
+		TableLock.acquire()
+		for i in Blues:
+			if i[0]==siz:
+				return i
+		TableLock.release()
+	elif colour== "r":
+		TableLock.acquire()
+		for i in Reds:
+			if i[0]==siz:
+				return i
+		TableLock.release()
+	elif colour== "g":
+		TableLock.acquire()
+		for i in Greens:
+			if i[0]==siz:
+				return i
+		TableLock.release()
+	
+
+def info(x,y):
+	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
+	dist_min_val = [x[0],x[1],y[0],y[1]]
+	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
+	dist_max_val = [x[0],x[1],y[0],y[1]]
+	for i in range(1,3):
+		dist = math.sqrt( (x[i] - x[i+1])**2 + (y[i] - y[i+1])**2 )
+		if dist_min > dist:
+			dist_min=dist
+			dist_min_val = [x[i],x[i+1],y[i],y[i+1]]
+		if dist_max < dist:
+			dist_max = dist
+			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
+	#size, dx,dy
+	move_y=((655-central_pos(x))*3.1)/dist_min
+	move_x=((637-central_pos(y))*3.1)/dist_min
+	size=round(dist_max/dist_min)*2
+	rot=rotation(dist_max_val)
+	return [size,move_x,move_y,rot]
+	
+def rearrange(data):
+	print("REARRANGE")
+	print(data)
+	if data==():
+		return "NO DATA RECEIVED IN PACKAGE"
+	if data[0] == 0:
+		global Board
+		if Board==[]:
+			Board = info(data[1:5],data[5:9])
+		return "Received Board data"
+	global Reds
+	global Greens
+	global Blues
+	rows=len(data)
+	table=[]
+	i=0
+	while i<rows:
+		table.append(info(data[i+1:i+5],data[i+5:i+9]))
+		i=i+9;
+	print(table)
+	
+	if data[0] == 1:
+		TableLock.acquire()
+		Reds=table
+		TableLock.release()
+		return "Received Reds Data"
+	elif data[0] == 2:
+		TableLock.acquire()
+		Greens=table
+		TableLock.release()
+		return "Received Greens Data"
+	elif data[0] == 3:
+		TableLock.acquire()
+		Blues=table
+		TableLock.release()
+		return "Received Blues Data"
+
 	
 def scale_rotation(y,x):
 	global move_x
@@ -72,23 +155,18 @@ def scale_rotation(y,x):
 		if dist_max < dist:
 			dist_max = dist
 			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
-	#print 'Scale: ' + str(dist_min) + ' = 3,1cm'
 	move_x=((655-central_pos(x))*3.1)/dist_min #655
 	move_y=((655-central_pos(y))*3.1)/dist_min #637 650
-	#print 'Distance x: ' + str(move_x) + ' cm'
-	#print 'Distance y: ' + str(move_y) + ' cm'
 	move_y=-move_y/100
 	move_x=move_x/100
 	rads = rotation(dist_max_val)
-	#print 'rotation: '
-	#print rotation(dist_max_val)
-	#print irpos.get_tfg_joint_position()
 			
 	
 def callback(data):
 	global BlockPos
 	# DATA: num,y1,y2,y3,y4,x1,x2,x3,x4
 	#rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
+	print(rearrange(data.data))
 	DataLock.acquire()
 	if BlockPos != []:
 		BlockPos=[]
@@ -105,6 +183,9 @@ def callback(data):
 def listener():
 	autostop=0
 	while 1:
+		while Overboard==-1:
+			print("EXTERMINATE")
+			move_overboard()
 		global BlockPos
 		#print "Check position"	
 		#print irpos.get_tfg_joint_position()
@@ -208,9 +289,27 @@ def service_position():
 	irpos.tfg_to_joint_position(0.09, 5.0)
 	rospy.sleep(2)
 	
-		
-	
+def move_overboard():
+	global Board
+	global Overboard
+	if Overboard==-1:
+		if Board==[]:
+			print("No board in sight!")
+			return -1
+		else:
+			move_over(Board[1], Board[2], Board[3])
+			Overboard=irpos.get_joint_position()
+			return 0
+	else:
+		irpos.move_to_joint_position(Overboard)
+		return 1
     
+def move_operation_2():  
+	global Reds
+	global Greens
+	global Blues  
+	choose_block()
+	
 def move_operation():
 	global first_time
 	global move_x
@@ -256,6 +355,7 @@ def move_operation():
 if __name__ == '__main__':
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	service_position()
+	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback)
 	listener()
 
