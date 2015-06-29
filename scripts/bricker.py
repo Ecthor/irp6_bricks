@@ -48,19 +48,22 @@ def central_pos(x):
 	
 def rotation(xy):
 	if xy[3]<xy[2]:
-		print 'obrot w prawo'
+		#print 'obrot w prawo'
 		alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
-		print math.atan(alpha)
+		#print math.atan(alpha)
 		if math.atan(alpha)<-1:
 			print "PRZEKROCZONE"
 			return math.atan(alpha)+3.1415
 	else:
-		print 'obrot w lewo'
+		#print 'obrot w lewo'
 		alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
-		print math.atan(alpha)
+		#print math.atan(alpha)
 	return math.atan(alpha)
 	
 def choose_block(colour, siz):
+	print Blues
+	print Greens
+	print Greens
 	if colour == "b":
 		TableLock.acquire()
 		for i in Blues:
@@ -79,6 +82,7 @@ def choose_block(colour, siz):
 			if i[0]==siz:
 				return i
 		TableLock.release()
+	return 'ERROR'
 	
 def info(x,y, scale_modifier=1):
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
@@ -101,8 +105,8 @@ def info(x,y, scale_modifier=1):
 	return [size,move_x,move_y,rot]
 	
 def rearrange(data):
-	print("REARRANGE")
-	print(data)
+	#print("REARRANGE")
+	#print(data)
 	if data==():
 		return "NO DATA RECEIVED IN PACKAGE"
 	if data[0] == 0:
@@ -119,7 +123,7 @@ def rearrange(data):
 	while i<rows:
 		table.append(info(data[i+1:i+5],data[i+5:i+9]))
 		i=i+9;
-	print(table)
+	#print(table)
 	
 	if data[0] == 1:
 		TableLock.acquire()
@@ -164,7 +168,8 @@ def callback(data):
 	global BlockPos
 	# DATA: num,y1,y2,y3,y4,x1,x2,x3,x4
 	#rospy.loginfo(rospy.get_caller_id() + "I heard %s", data.data)
-	print(rearrange(data.data))
+	#print(rearrange(data.data))
+	rearrange(data.data)
 	DataLock.acquire()
 	if BlockPos != []:
 		BlockPos=[]
@@ -180,9 +185,14 @@ def callback(data):
 def listener():
 	autostop=0
 	while 1:
+		autostop=0
 		while Overboard==-1:
-			print("EXTERMINATE")
 			move_overboard()
+			autostop=autostop+1
+			rospy.sleep(0.01)
+			if autostop >= 1000:
+				print "NO BOARD. STOP"
+				return
 		global BlockPos
 		#print "Check position"	
 		#print irpos.get_tfg_joint_position()
@@ -191,8 +201,10 @@ def listener():
 		DataLock.acquire()
 		if BlockPos != []:
 			DataLock.release()
-			print "YEAH"
+			print "BEGINNING MOVE OP"
 			move_operation()
+			print "ENDED MOVE OP"
+			return
 			autostop=0
 		else:
 			DataLock.release()
@@ -201,8 +213,7 @@ def listener():
 			if autostop>1000:
 				print "CONNECTION TIMEOUT. STOP"
 				break
-	# spin() simply keeps python from exiting until this node is stopped
-	#rospy.spin()
+
 	
 def move_over(move_x, move_y, rads):
     irpos.move_rel_to_cartesian_pose_with_contact(17.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
@@ -302,14 +313,30 @@ def move_overboard():
 		irpos.move_to_joint_position(Overboard)
 		return 1
     
-def move_operation_2():  
+def move_operation():  
 	global Reds
 	global Greens
 	global Blues  
 	schema = model.open_schema()
+	level=0
+	for i1 in schema:
+		dist=-3
+		for i2 in i1:
+			if i2 == ',':
+				dist=dist+i2[0]
+				continue
+			TableLock.acquire()
+			new_brick = choose_block(i2[1],i2[0])
+			if new_brick == 'ERROR':
+				return 'No brick found'
+			TableLock.release()
+			print new_brick
+			
+			dist=dist+i2[0]
+		level=level+1
 	
 	
-def move_operation():
+def move_operation_2():
 	global first_time
 	global move_x
 	global move_y

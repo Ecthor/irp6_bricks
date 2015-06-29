@@ -2,6 +2,7 @@
 
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
+
 def open_schema():
 	Tk().withdraw()
 	filename = askopenfilename()
@@ -35,4 +36,5 @@ def open_schema():
 	print out
 
 	file.close()
-	return lista2
+	return list(reversed(lista2))
+	

@@ -41,7 +41,7 @@ def rotation(xy):
 		print math.atan(alpha)
 	return math.atan(alpha)
 	
-def info(x,y):
+def info(x,y, scale_modifier=1):
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
 	dist_min_val = [x[0],x[1],y[0],y[1]]
 	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
@@ -55,12 +55,13 @@ def info(x,y):
 			dist_max = dist
 			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
 	#size, dx,dy
-	move_y=((655-central_pos(x))*3.1)/dist_min
-	move_x=((637-central_pos(y))*3.1)/dist_min
+	move_y=-((655-central_pos(x))*3.1*scale_modifier)/(dist_min*100)
+	move_x=((637-central_pos(y))*3.1*scale_modifier)/(dist_min*100)
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_val)
 	return [size,move_x,move_y,rot]
-	
+
+
 def rearrange(data):
 	'''print("dlugosc") 
 	print(len(data))
@@ -71,10 +72,10 @@ def rearrange(data):
 	return "test"'''
 	if data[0] == 0:
 		global Board
-		if Board==[]:
-			Board = info(data[1:5],data[5:9])
-			print("BOARD DATA HERE")
-			print(Board)
+		#if Board==[]:
+		Board = info(data[1:5],data[5:9],4)
+		print("BOARD DATA HERE")
+		print(Board)
 		return "Received Board data"
 	global Reds
 	global Greens
