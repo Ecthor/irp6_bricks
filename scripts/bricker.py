@@ -43,45 +43,60 @@ def createPose(x, y, z, ox, oy, oz, ow):
 	return P
 	
 def central_pos(x):
-	print x
+	#print x
 	return (x[0]+x[1]+x[2]+x[3])/len(x)
 	
 def rotation(xy):
-	if xy[3]<xy[2]:
-		#print 'obrot w prawo'
-		alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
-		#print math.atan(alpha)
-		if math.atan(alpha)<-1:
-			print "PRZEKROCZONE"
-			return math.atan(alpha)+3.1415
-	else:
-		#print 'obrot w lewo'
-		alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
-		#print math.atan(alpha)
-	return math.atan(alpha)
+	try:
+		if xy[3]<xy[2]:
+			#print 'obrot w prawo'
+			alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			#print math.atan(alpha)
+			if math.atan(alpha)<-1:
+				#print "PRZEKROCZONE w prawo"
+				return math.atan(alpha)+3.1415
+		else:
+			#print 'obrot w lewo'
+			alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			#print math.atan(alpha)
+		return math.atan(alpha)
+	except:
+		print "Divided by zero, vertical line, assuming zero"
+		return 0
 	
 def choose_block(colour, siz):
+	print " RED BLUES GREENS"
+	print Reds
 	print Blues
 	print Greens
-	print Greens
+	print "Colour"
+	print colour
+	print "Size"
+	print siz
 	if colour == "b":
 		TableLock.acquire()
 		for i in Blues:
-			if i[0]==siz:
+			if i[0]==float(siz):
+				TableLock.release()
 				return i
 		TableLock.release()
 	elif colour== "r":
 		TableLock.acquire()
 		for i in Reds:
-			if i[0]==siz:
+			if i[0]==float(siz):
+				TableLock.release()
 				return i
 		TableLock.release()
 	elif colour== "g":
 		TableLock.acquire()
 		for i in Greens:
-			if i[0]==siz:
+			print i
+			print i[0]
+			print i[1]
+			if i[0]==float(siz):
+				TableLock.release()
 				return i
-		TableLock.release()
+	TableLock.release()
 	return 'ERROR'
 	
 def info(x,y, scale_modifier=1):
@@ -102,11 +117,18 @@ def info(x,y, scale_modifier=1):
 	move_x=((637-central_pos(y))*3.1*scale_modifier)/(dist_min*100)
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_val)
+	if scale_modifier==4:
+		print "ROTATION FOR BOARD HERE"
+		print rot
+		if rot > rot-1.57 and rot-1.57>-1:
+			rot = rot-1.57
+			
 	return [size,move_x,move_y,rot]
 	
 def rearrange(data):
 	#print("REARRANGE")
 	#print(data)
+	
 	if data==():
 		return "NO DATA RECEIVED IN PACKAGE"
 	if data[0] == 0:
@@ -218,8 +240,6 @@ def listener():
 def move_over(move_x, move_y, rads):
     irpos.move_rel_to_cartesian_pose_with_contact(17.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
     rotate(rads)
-    #move down to correct
-    irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
     return
 
 def rotate(rads):
@@ -231,6 +251,8 @@ def rotate(rads):
     return
     
 def correction(move_x, move_y, rads):
+	#Move down to correct
+	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	if move_x<0.05:# and move_x>0.0005:
 		print "Correcting x"
 		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(move_x, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
@@ -250,8 +272,10 @@ def grab_brick():
 	irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	
-def put_brick():
+def put_brick(offset=0):
 	move_overboard()
+	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	
 	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	print "Open"
@@ -263,21 +287,21 @@ def put_brick():
 def push_brick():
 	irpos.tfg_to_joint_position(0.055, 5.0)
 	irpos.move_rel_to_cartesian_pose_with_contact(4.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
-	
+	rect_size=0.005
 	#gora prawo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#dol prawo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#dol lewo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#gora lewo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
 	#push
@@ -290,7 +314,7 @@ def push_brick():
 	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
 		
 def service_position():
-	print irpos.get_joint_position()
+	#print irpos.get_joint_position()
 	if  irpos.get_joint_position() != [ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.48]:
 		irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.48], 10.0)
 	else:
@@ -306,10 +330,13 @@ def move_overboard():
 			print("No board in sight!")
 			return -1
 		else:
+			print "BOARD DATA HERE:"
+			print Board
 			move_over(Board[1], Board[2], Board[3])
 			Overboard=irpos.get_joint_position()
 			return 0
 	else:
+		print Overboard
 		irpos.move_to_joint_position(Overboard)
 		return 1
     
@@ -319,22 +346,42 @@ def move_operation():
 	global Blues  
 	schema = model.open_schema()
 	level=0
+	service_position()
+	rospy.sleep(3)
 	for i1 in schema:
 		dist=-3
 		for i2 in i1:
 			if i2 == ',':
 				dist=dist+i2[0]
 				continue
-			TableLock.acquire()
 			new_brick = choose_block(i2[1],i2[0])
 			if new_brick == 'ERROR':
+				print "ERROR"
 				return 'No brick found'
-			TableLock.release()
+			print "taking"
+			print dist
+			print level
 			print new_brick
+			take_operation(new_brick[1],new_brick[2],new_brick[3],dist)
+			print "taking ended"
 			
-			dist=dist+i2[0]
+			dist=dist+int(i2[0])
 		level=level+1
 	
+def take_operation(move_x, move_y, rads, offset=0):
+	move_over(move_x, move_y, rads)
+	rospy.sleep(2)
+	grab_brick()
+	rospy.sleep(2)
+	#Bring back the block
+	put_brick(offset)
+	#push
+	push_brick()
+	#return to service position
+	service_position()
+	rospy.sleep(2)
+	
+	return
 	
 def move_operation_2():
 	global first_time
