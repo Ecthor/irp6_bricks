@@ -94,8 +94,11 @@ def choose_block(colour, siz):
 			print i[0]
 			print i[1]
 			if i[0]==float(siz):
+				print "Chosen brick:"
+				print i
 				TableLock.release()
 				return i
+			TableLock.release()
 	TableLock.release()
 	return 'ERROR'
 	
@@ -121,7 +124,7 @@ def info(x,y, scale_modifier=1):
 		print "ROTATION FOR BOARD HERE"
 		print rot
 		if rot > rot-1.57 and rot-1.57>-1:
-			rot = rot-1.57
+			rot = -rot+1.57
 			
 	return [size,move_x,move_y,rot]
 	
@@ -134,6 +137,8 @@ def rearrange(data):
 	if data[0] == 0:
 		global Board
 		if Board==[]:
+			print "BOARD DATA HERE"
+			print data
 			Board = info(data[1:5],data[5:9],4)
 		return "Received Board data"
 	global Reds
@@ -334,17 +339,22 @@ def move_overboard():
 			print Board
 			move_over(Board[1], Board[2], Board[3])
 			Overboard=irpos.get_joint_position()
+			lst = list(Overboard)
+			lst.append(10.0)
+			Overboard = tuple(lst)
 			return 0
 	else:
+		print "MOVING OVERBOARD"
 		print Overboard
-		irpos.move_to_joint_position(Overboard)
+		irpos.move_to_joint_position(Overboard, 5)
 		return 1
     
-def move_operation():  
+def move_operation(): 
 	global Reds
 	global Greens
 	global Blues  
 	schema = model.open_schema()
+	print schema
 	level=0
 	service_position()
 	rospy.sleep(3)
