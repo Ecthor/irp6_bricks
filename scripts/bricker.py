@@ -48,16 +48,25 @@ def central_pos(x):
 	
 def rotation(xy):
 	try:
-		if xy[3]<xy[2]:
+		if xy[1]>xy[0]:
+			temp=xy[1]
+			xy[1]=xy[0]
+			xy[0]=temp
+			temp=xy[3]
+			xy[3]=xy[2]
+			xy[2]=temp
+		if xy[3]>xy[2]:
 			#print 'obrot w prawo'
-			alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			#alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
 			#print math.atan(alpha)
 			if math.atan(alpha)<-1:
-				#print "PRZEKROCZONE w prawo"
+				print "PRZEKROCZONE w prawo"
 				return math.atan(alpha)+3.1415
 		else:
 			#print 'obrot w lewo'
-			alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			#alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
+			alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
 			#print math.atan(alpha)
 		return math.atan(alpha)
 	except:
@@ -73,53 +82,68 @@ def choose_block(colour, siz):
 	print colour
 	print "Size"
 	print siz
-	if colour == "b":
-		TableLock.acquire()
-		for i in Blues:
-			if i[0]==float(siz):
-				TableLock.release()
-				return i
-		TableLock.release()
-	elif colour== "r":
-		TableLock.acquire()
-		for i in Reds:
-			if i[0]==float(siz):
-				TableLock.release()
-				return i
-		TableLock.release()
-	elif colour== "g":
-		TableLock.acquire()
-		for i in Greens:
-			print i
-			print i[0]
-			print i[1]
-			if i[0]==float(siz):
-				print "Chosen brick:"
-				print i
-				TableLock.release()
-				return i
+	for error_rate in range(0,10):
+		if colour == "b":
+			TableLock.acquire()
+			for i in Blues:
+				if i[0]==float(siz):
+					print "Chosen brick:"
+					print i
+					TableLock.release()
+					return i
 			TableLock.release()
-	TableLock.release()
+			return
+		elif colour== "r":
+			TableLock.acquire()
+			for i in Reds:
+				if i[0]==float(siz):
+					print "Chosen brick:"
+					print i
+					TableLock.release()
+					return i
+			TableLock.release()
+			return
+		elif colour== "g":
+			TableLock.acquire()
+			for i in Greens:
+				print i
+				print i[0]
+				print i[1]
+				if i[0]==float(siz):
+					print "Chosen brick:"
+					print i
+					TableLock.release()
+					return i
+			TableLock.release()
+			return
+		TableLock.release()
 	return 'ERROR'
 	
 def info(x,y, scale_modifier=1):
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_min_val = [x[0],x[1],y[0],y[1]]
+	dist_min_pos = [x[0],x[1],y[0],y[1]]
 	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_max_val = [x[0],x[1],y[0],y[1]]
+	dist_max_pos = [x[0],x[1],y[0],y[1]]
 	for i in range(1,3):
 		dist = math.sqrt( (x[i] - x[i+1])**2 + (y[i] - y[i+1])**2 )
 		if dist_min > dist:
 			dist_min=dist
-			dist_min_val = [x[i],x[i+1],y[i],y[i+1]]
+			dist_min_pos = [x[i],x[i+1],y[i],y[i+1]]
 		if dist_max < dist:
 			dist_max = dist
-			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
+			dist_max_pos = [x[i],x[i+1],y[i],y[i+1]]
+	dist = math.sqrt( (x[3] - x[0])**2 + (y[3] - y[0])**2 )
+	if dist_min > dist:
+		dist_min=dist
+		dist_min_pos = [x[3],x[0],y[3],y[i+1]]
+	if dist_max < dist:
+		dist_max = dist
+		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
 	move_y=-((655-central_pos(x))*3.1*scale_modifier)/(dist_min*100)
-	move_x=((637-central_pos(y))*3.1*scale_modifier)/(dist_min*100)
+	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
-	rot=rotation(dist_max_val)
+	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
 		print "ROTATION FOR BOARD HERE"
 		print rot
@@ -174,22 +198,22 @@ def scale_rotation(y,x):
 	global rads
 	global first_time
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_min_val = [x[0],x[1],y[0],y[1]]
+	dist_min_pos = [x[0],x[1],y[0],y[1]]
 	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_max_val = [x[0],x[1],y[0],y[1]]
+	dist_max_pos = [x[0],x[1],y[0],y[1]]
 	for i in range(1,3):
 		dist = math.sqrt( (x[i] - x[i+1])**2 + (y[i] - y[i+1])**2 )
 		if dist_min > dist:
 			dist_min=dist
-			dist_min_val = [x[i],x[i+1],y[i],y[i+1]]
+			dist_min_pos = [x[i],x[i+1],y[i],y[i+1]]
 		if dist_max < dist:
 			dist_max = dist
-			dist_max_val = [x[i],x[i+1],y[i],y[i+1]]
+			dist_max_pos = [x[i],x[i+1],y[i],y[i+1]]
 	move_x=((655-central_pos(x))*3.1)/dist_min #655
 	move_y=((655-central_pos(y))*3.1)/dist_min #637 650
 	move_y=-move_y/100
 	move_x=move_x/100
-	rads = rotation(dist_max_val)
+	rads = rotation(dist_max_pos)
 			
 def callback(data):
 	global BlockPos
@@ -208,6 +232,7 @@ def callback(data):
 			BlockPos=[]
 			break
 	DataLock.release()
+	
 	
 def listener():
 	autostop=0
@@ -279,7 +304,7 @@ def grab_brick():
 	
 def put_brick(offset=0):
 	move_overboard()
-	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
 	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
@@ -338,6 +363,9 @@ def move_overboard():
 			print "BOARD DATA HERE:"
 			print Board
 			move_over(Board[1], Board[2], Board[3])
+			irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+			irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	
 			Overboard=irpos.get_joint_position()
 			lst = list(Overboard)
 			lst.append(10.0)
@@ -345,7 +373,6 @@ def move_overboard():
 			return 0
 	else:
 		print "MOVING OVERBOARD"
-		print Overboard
 		irpos.move_to_joint_position(Overboard, 5)
 		return 1
     
@@ -361,10 +388,11 @@ def move_operation():
 	for i1 in schema:
 		dist=-3
 		for i2 in i1:
-			if i2 == ',':
+			if i2[1] == '.':
 				dist=dist+i2[0]
 				continue
 			new_brick = choose_block(i2[1],i2[0])
+			dist=dist+(int(i2[0])/2)-1
 			if new_brick == 'ERROR':
 				print "ERROR"
 				return 'No brick found'
@@ -439,6 +467,6 @@ if __name__ == '__main__':
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	service_position()
 	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.035), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
-	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback)
+	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback, None, 1)
 	listener()
 
