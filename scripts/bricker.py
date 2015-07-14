@@ -73,7 +73,7 @@ def rotation(xy):
 		print "Divided by zero, vertical line, assuming zero"
 		return 0
 	
-def choose_block(colour, siz):
+def choose_block(colour, siz, mod='CLOSEST'):
 	print " RED BLUES GREENS"
 	print Reds
 	print Blues
@@ -82,40 +82,81 @@ def choose_block(colour, siz):
 	print colour
 	print "Size"
 	print siz
+	chosen = []
+	deltamax=90000.0
+	deltamin=0.0
+	founded=[]
 	for error_rate in range(0,10):
 		if colour == "b":
 			TableLock.acquire()
 			for i in Blues:
 				if i[0]==float(siz):
-					print "Chosen brick:"
+					print "Chosen bricks:"
 					print i
-					TableLock.release()
-					return i
+					chosen.append(i)
 			TableLock.release()
-			return
+			for i in chosen:
+				if mod=='CLOSEST':
+					#print "CLOSEST mod"
+					if deltamax>(math.fabs(i[1])+math.fabs(i[2])):
+						deltamax=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+				elif mod=='FURTHEST':
+					#print "FURTHEST mod"
+					if deltamin<(math.fabs(i[1])+math.fabs(i[2])):
+						deltamin=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+			#print "Chosen brick:"
+			#print founded
+			return founded
 		elif colour== "r":
 			TableLock.acquire()
 			for i in Reds:
 				if i[0]==float(siz):
-					print "Chosen brick:"
-					print i
-					TableLock.release()
-					return i
+					#print "Chosen bricks:"
+					#print i
+					chosen.append(i)
 			TableLock.release()
-			return
+			for i in chosen:
+				if mod=='CLOSEST':
+					#print "CLOSEST mod"
+					if deltamax>(math.fabs(i[1])+math.fabs(i[2])):
+						deltamax=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+				elif mod=='FURTHEST':
+					#print "FURTHEST mod"
+					if deltamin<(math.fabs(i[1])+math.fabs(i[2])):
+						deltamin=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+			#print "Chosen brick:"
+			#print founded
+			return founded
 		elif colour== "g":
 			TableLock.acquire()
 			for i in Greens:
-				print i
-				print i[0]
-				print i[1]
 				if i[0]==float(siz):
-					print "Chosen brick:"
-					print i
-					TableLock.release()
-					return i
+					#print "Chosen bricks:"
+					#print i
+					chosen.append(i)
 			TableLock.release()
-			return
+			for i in chosen:
+				if mod=='CLOSEST':
+					#print "CLOSEST mod"
+					if deltamax>(math.fabs(i[1])+math.fabs(i[2])):
+						deltamax=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+						#print "founded new:"
+						#print i
+				elif mod=='FURTHEST':
+					#print "FURTHEST mod"
+					if deltamin<(math.fabs(i[1])+math.fabs(i[2])):
+						deltamin=math.fabs(i[1])+math.fabs(i[2])
+						founded=i
+						#print "founded new:"
+						#print i
+			#print "Chosen brick:"
+			#print founded
+			return founded
 		TableLock.release()
 	return 'ERROR'
 	
@@ -140,7 +181,7 @@ def info(x,y, scale_modifier=1):
 		dist_max = dist
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
-	move_y=-((655-central_pos(x))*3.1*scale_modifier)/(dist_min*100)
+	move_y=-((654-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
 	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
@@ -303,6 +344,7 @@ def grab_brick():
 	irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	
 def put_brick(offset=0):
+	print "Offset: "+str(offset)+ " equals " + str(offset*0.016)
 	move_overboard()
 	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
@@ -364,7 +406,10 @@ def move_overboard():
 			print Board
 			move_over(Board[1], Board[2], Board[3])
 			irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
-			irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+			rospy.sleep(1)
+			#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	
+			irpos.move_rel_to_cartesian_pose(15.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	
 			Overboard=irpos.get_joint_position()
 			lst = list(Overboard)
@@ -389,26 +434,45 @@ def move_operation():
 		dist=-3
 		for i2 in i1:
 			if i2[1] == '.':
-				dist=dist+i2[0]
+				dist=dist+int(i2[0])
 				continue
-			new_brick = choose_block(i2[1],i2[0])
+			#new_brick = choose_block(i2[1],i2[0])
 			dist=dist+(int(i2[0])/2)-1
-			if new_brick == 'ERROR':
-				print "ERROR"
-				return 'No brick found'
+			#if new_brick == 'ERROR':
+			#	print "ERROR"
+			#	return 'No brick found'
 			print "taking"
 			print dist
 			print level
-			print new_brick
-			take_operation(new_brick[1],new_brick[2],new_brick[3],dist)
+			#take_operation(new_brick[1],new_brick[2],new_brick[3],dist,i2[1],i2[0])
+			take_operation(i2[1],i2[0],dist)
 			print "taking ended"
 			
 			dist=dist+int(i2[0])
 		level=level+1
 	
-def take_operation(move_x, move_y, rads, offset=0):
+def take_operation(colour, siz, offset=0):#move_x, move_y, rads, 
+	new_brick = choose_block(colour,siz, 'FURTHEST')
+	print "New brick to take:" + str(new_brick)
+	if new_brick == 'ERROR':
+		print "ERROR"
+		return 'No brick found'
+	move_x=new_brick[1]
+	move_y=new_brick[2]
+	rads=new_brick[3]
+	#MOVE OVER
 	move_over(move_x, move_y, rads)
+	
 	rospy.sleep(2)
+	new_brick = choose_block(colour,siz, 'CLOSEST')
+	if new_brick == 'ERROR':
+		print "ERROR"
+		return 'No brick found'
+	move_x=new_brick[1]
+	move_y=new_brick[2]
+	rads=new_brick[3]
+	#CORRECT
+	move_over(move_x, move_y, rads)
 	grab_brick()
 	rospy.sleep(2)
 	#Bring back the block
@@ -419,7 +483,7 @@ def take_operation(move_x, move_y, rads, offset=0):
 	service_position()
 	rospy.sleep(2)
 	
-	return
+	return "PLACING " + str(colour) + str(siz) + " ENDED"
 	
 def move_operation_2():
 	global first_time
