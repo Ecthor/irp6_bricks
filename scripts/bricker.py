@@ -61,7 +61,7 @@ def rotation(xy):
 			alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
 			#print math.atan(alpha)
 			if math.atan(alpha)<-1:
-				print "PRZEKROCZONE w prawo"
+				#print "PRZEKROCZONE w prawo"
 				return math.atan(alpha)+3.1415
 		else:
 			#print 'obrot w lewo'
@@ -435,9 +435,11 @@ def move_operation():
 		for i2 in i1:
 			if i2[1] == '.':
 				dist=dist+int(i2[0])
+				print ". dist = " + str(dist)
 				continue
 			#new_brick = choose_block(i2[1],i2[0])
 			dist=dist+(int(i2[0])/2)-1
+			print "afterbrick dist = " + str(dist)
 			#if new_brick == 'ERROR':
 			#	print "ERROR"
 			#	return 'No brick found'
@@ -448,7 +450,8 @@ def move_operation():
 			take_operation(i2[1],i2[0],dist)
 			print "taking ended"
 			
-			dist=dist+int(i2[0])
+			dist=dist+(int(i2[0])/2)+2
+			print "afterall dist = " + str(dist)
 		level=level+1
 	
 def take_operation(colour, siz, offset=0):#move_x, move_y, rads, 
