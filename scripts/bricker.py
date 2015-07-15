@@ -57,17 +57,13 @@ def rotation(xy):
 			xy[2]=temp
 		if xy[3]>xy[2]:
 			#print 'obrot w prawo'
-			#alpha=-math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
 			alpha=-math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
-			#print math.atan(alpha)
 			if math.atan(alpha)<-1:
 				#print "PRZEKROCZONE w prawo"
 				return math.atan(alpha)+3.1415
 		else:
 			#print 'obrot w lewo'
-			#alpha=math.fabs(xy[3]-xy[2])/math.fabs(xy[1]-xy[0]) #dx/dy
 			alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
-			#print math.atan(alpha)
 		return math.atan(alpha)
 	except:
 		print "Divided by zero, vertical line, assuming zero"
@@ -108,6 +104,8 @@ def choose_block(colour, siz, mod='CLOSEST'):
 						founded=i
 			#print "Chosen brick:"
 			#print founded
+			if founded==[]:
+				continue
 			return founded
 		elif colour== "r":
 			TableLock.acquire()
@@ -130,6 +128,8 @@ def choose_block(colour, siz, mod='CLOSEST'):
 						founded=i
 			#print "Chosen brick:"
 			#print founded
+			if founded==[]:
+				continue
 			return founded
 		elif colour== "g":
 			TableLock.acquire()
@@ -156,8 +156,12 @@ def choose_block(colour, siz, mod='CLOSEST'):
 						#print i
 			#print "Chosen brick:"
 			#print founded
+			if founded==[]:
+				continue
 			return founded
 		TableLock.release()
+		print "NO NEEDED BRICK FOUND FOR " + str(error_rate) + " CYCLES. WAITING."
+		rospy.sleep(1)
 	return 'ERROR'
 	
 def info(x,y, scale_modifier=1):
@@ -181,7 +185,7 @@ def info(x,y, scale_modifier=1):
 		dist_max = dist
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
-	move_y=-((654-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
+	move_y=-((652-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
 	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
@@ -189,7 +193,8 @@ def info(x,y, scale_modifier=1):
 		print "ROTATION FOR BOARD HERE"
 		print rot
 		if rot > rot-1.57 and rot-1.57>-1:
-			rot = -rot+1.57
+			print "ROTATION FOR BOARD REACHED LIMIT. CHANGING FROM" + str(math.degrees(rot)) + " TO " + str(math.degrees(-rot+1.57))
+			rot = rot-(math.pi/2)#1.57
 			
 	return [size,move_x,move_y,rot]
 	
@@ -308,8 +313,8 @@ def listener():
 				break
 
 	
-def move_over(move_x, move_y, rads):
-    irpos.move_rel_to_cartesian_pose_with_contact(17.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+def move_over(move_x, move_y, rads, time=15.0):
+    irpos.move_rel_to_cartesian_pose_with_contact(12.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
     rotate(rads)
     return
 
@@ -331,7 +336,7 @@ def correction(move_x, move_y, rads):
 		print "Correcting y"
 		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	print rads
-	if math.fabs(rads)<1 and math.fabs(rads)>0.05:
+	if math.fabs(rads)<math.radians(1) and math.fabs(rads)>math.radians(0.05):
 		print "Correcting rotation"
 		rotate(rads)
 		
@@ -343,39 +348,56 @@ def grab_brick():
 	irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	
-def put_brick(offset=0):
+def put_brick(offset=0, heigth=0):
 	print "Offset: "+str(offset)+ " equals " + str(offset*0.016)
 	move_overboard()
 	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	#heigth=2.3 cm/1.9
+	#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.03, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(14.0, Pose(Point(0, 0, 0.195-(heigth*0.024)), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.025, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, 0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
-	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
-	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	
+	
+	
 	print "Open"
 	irpos.tfg_to_joint_position(0.09, 5.0)
-	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
-	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, -0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, -0.025), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
-def push_brick():
+def push_brick(mod="CROSS"):
+	#mod CROSS RECT
 	irpos.tfg_to_joint_position(0.055, 5.0)
 	irpos.move_rel_to_cartesian_pose_with_contact(4.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	rect_size=0.005
+	
 	#gora prawo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
-	
 	#dol prawo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0.008, -0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
-	
 	#dol lewo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
-	
 	#gora lewo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.008, 0.008, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	
+	
+	if mod=="CROSS":
+		#dol
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size/2, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		#2gora
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		#dol
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size/2, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		#lewo
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, -rect_size/2, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		#2prawo
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		#lewo
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, -rect_size/2, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		
+		
 	#push
 	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
 	
@@ -435,11 +457,11 @@ def move_operation():
 		for i2 in i1:
 			if i2[1] == '.':
 				dist=dist+int(i2[0])
-				print ". dist = " + str(dist)
+				#print ". dist = " + str(dist)
 				continue
 			#new_brick = choose_block(i2[1],i2[0])
 			dist=dist+(int(i2[0])/2)-1
-			print "afterbrick dist = " + str(dist)
+			#print "afterbrick dist = " + str(dist)
 			#if new_brick == 'ERROR':
 			#	print "ERROR"
 			#	return 'No brick found'
@@ -447,14 +469,14 @@ def move_operation():
 			print dist
 			print level
 			#take_operation(new_brick[1],new_brick[2],new_brick[3],dist,i2[1],i2[0])
-			take_operation(i2[1],i2[0],dist)
+			take_operation(i2[1],i2[0],dist,level)
 			print "taking ended"
 			
-			dist=dist+(int(i2[0])/2)+2
-			print "afterall dist = " + str(dist)
+			dist=dist+(int(i2[0])/2)+1
+			#print "afterall dist = " + str(dist)
 		level=level+1
 	
-def take_operation(colour, siz, offset=0):#move_x, move_y, rads, 
+def take_operation(colour, siz, offset=0, heigth=0):#move_x, move_y, rads, 
 	new_brick = choose_block(colour,siz, 'FURTHEST')
 	print "New brick to take:" + str(new_brick)
 	if new_brick == 'ERROR':
@@ -475,11 +497,11 @@ def take_operation(colour, siz, offset=0):#move_x, move_y, rads,
 	move_y=new_brick[2]
 	rads=new_brick[3]
 	#CORRECT
-	move_over(move_x, move_y, rads)
+	move_over(move_x, move_y, rads, 5.0)
 	grab_brick()
 	rospy.sleep(2)
 	#Bring back the block
-	put_brick(offset)
+	put_brick(offset, heigth)
 	#push
 	push_brick()
 	#return to service position
