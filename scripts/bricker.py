@@ -13,6 +13,7 @@ import model
 
 DataLock = threading.Lock()
 TableLock = threading.Lock()
+NewLock = threading.Lock()
 global move_x
 move_x=0
 global move_y
@@ -27,6 +28,9 @@ global Overboard
 global Reds
 global Greens
 global Blues
+global NewReds
+global NewGreens
+global NewBlues
 #For init
 Overboard=-1
 BlockPos=[]
@@ -34,13 +38,17 @@ Board=[]
 Reds=[]
 Greens=[]
 Blues=[]
-
-def createPose(x, y, z, ox, oy, oz, ow):
-	position = Point(x, y, z)
-	quaternion = Quaternion(ox, oy, oz, ow)
-
-	P = Pose(position, quaternion)
-	return P
+	
+	
+def clear_new():
+	global NewReds
+	global NewGreens
+	global NewBlues
+	NewLock.acquire()
+	NewReds = False
+	NewGreens = False
+	NewBlues = False
+	NewLock.release()
 	
 def central_pos(x):
 	#print x
@@ -66,24 +74,25 @@ def rotation(xy):
 			alpha=math.fabs(xy[1]-xy[0])/math.fabs(xy[3]-xy[2]) #dx/dy
 		return math.atan(alpha)
 	except:
-		print "Divided by zero, vertical line, assuming zero"
+		#print "Divided by zero, vertical line, assuming zero"
 		return 0
 	
-def choose_block(colour, siz, mod='CLOSEST'):
-	print " RED BLUES GREENS"
-	print Reds
-	print Blues
-	print Greens
-	print "Colour"
-	print colour
-	print "Size"
-	print siz
+def choose_block(color, siz, mod='CLOSEST'):
+	#print " RED BLUES GREENS"
+	#print Reds
+	#print Blues
+	#print Greens
+	#print "Color"
+	#print color
+	#print "Size"
+	#print siz
+	clear_new()
 	chosen = []
-	deltamax=90000.0
-	deltamin=0.0
+	deltamax = 90000.0
+	deltamin = 0.0
 	founded=[]
 	for error_rate in range(0,10):
-		if colour == "b":
+		if color == "b":
 			TableLock.acquire()
 			for i in Blues:
 				if i[0]==float(siz):
@@ -106,8 +115,13 @@ def choose_block(colour, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+				if founded[3]<0:
+					founded[3]=founded[3]+(math.pi/2)
+				else:
+					founded[3]=founded[3]-(math.pi/2)
 			return founded
-		elif colour== "r":
+		elif color== "r":
 			TableLock.acquire()
 			for i in Reds:
 				if i[0]==float(siz):
@@ -130,8 +144,13 @@ def choose_block(colour, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+				if founded[3]<0:
+					founded[3]=founded[3]+(math.pi/2)
+				else:
+					founded[3]=founded[3]-(math.pi/2)
 			return founded
-		elif colour== "g":
+		elif color== "g":
 			TableLock.acquire()
 			for i in Greens:
 				if i[0]==float(siz):
@@ -158,10 +177,15 @@ def choose_block(colour, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+				if founded[3]<0:
+					founded[3]=founded[3]+(math.pi/2)
+				else:
+					founded[3]=founded[3]-(math.pi/2)
 			return founded
 		TableLock.release()
 		print "NO NEEDED BRICK FOUND FOR " + str(error_rate) + " CYCLES. WAITING."
-		rospy.sleep(1)
+		rospy.sleep(0.5)
 	return 'ERROR'
 	
 def info(x,y, scale_modifier=1):
@@ -185,7 +209,7 @@ def info(x,y, scale_modifier=1):
 		dist_max = dist
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
-	move_y=-((652-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
+	move_y=-((650-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
 	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
@@ -223,16 +247,28 @@ def rearrange(data):
 	#print(table)
 	
 	if data[0] == 1:
+		global NewReds
+		NewLock.acquire()
+		NewReds=True
+		NewLock.release()
 		TableLock.acquire()
 		Reds=table
 		TableLock.release()
 		return "Received Reds Data"
 	elif data[0] == 2:
+		global NewGreens
+		NewLock.acquire()
+		NewGreens=True
+		NewLock.release()
 		TableLock.acquire()
 		Greens=table
 		TableLock.release()
 		return "Received Greens Data"
 	elif data[0] == 3:
+		global NewBlues
+		NewLock.acquire()
+		NewBlues=True
+		NewLock.release()
 		TableLock.acquire()
 		Blues=table
 		TableLock.release()
@@ -280,7 +316,7 @@ def callback(data):
 	DataLock.release()
 	
 	
-def listener():
+def main():
 	autostop=0
 	while 1:
 		autostop=0
@@ -300,7 +336,7 @@ def listener():
 		if BlockPos != []:
 			DataLock.release()
 			print "BEGINNING MOVE OP"
-			move_operation()
+			print move_operation()
 			print "ENDED MOVE OP"
 			return
 			autostop=0
@@ -313,8 +349,8 @@ def listener():
 				break
 
 	
-def move_over(move_x, move_y, rads, time=15.0):
-    irpos.move_rel_to_cartesian_pose_with_contact(12.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+def move_over(move_x, move_y, rads, settime=15.0):
+    irpos.move_rel_to_cartesian_pose_with_contact(settime, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
     rotate(rads)
     return
 
@@ -325,37 +361,23 @@ def rotate(rads):
     myjoint = tuple(lst)
     irpos.move_to_joint_position(myjoint, 8.0)
     return
-    
-def correction(move_x, move_y, rads):
-	#Move down to correct
-	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
-	if move_x<0.05:# and move_x>0.0005:
-		print "Correcting x"
-		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(move_x, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
-	if move_y<0.05:# and move_y>0.0005:
-		print "Correcting y"
-		irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
-	print rads
-	if math.fabs(rads)<math.radians(1) and math.fabs(rads)>math.radians(0.05):
-		print "Correcting rotation"
-		rotate(rads)
-		
+    	
 def grab_brick():
 	irpos.tfg_to_joint_position(0.09, 5.0)
 	irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(7.0,7.0,7.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose_with_contact(6.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
-	irpos.tfg_to_joint_position(0.073, 5.0)
+	irpos.tfg_to_joint_position(0.070, 5.0)
 	irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	
 def put_brick(offset=0, heigth=0):
-	print "Offset: "+str(offset)+ " equals " + str(offset*0.016)
+	#print "Offset: "+str(offset)+ " equals " + str(offset*0.016)
 	move_overboard()
 	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(offset*0.016, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	#heigth=2.3 cm/1.9
 	#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.03, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	irpos.move_rel_to_cartesian_pose_with_contact(14.0, Pose(Point(0, 0, 0.195-(heigth*0.024)), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.03, 0.001, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(14.0, Pose(Point(0, 0, 0.195-(heigth*0.025)), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.025, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, 0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
@@ -373,23 +395,22 @@ def push_brick(mod="CROSS"):
 	irpos.move_rel_to_cartesian_pose_with_contact(4.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	rect_size=0.005
 	
-	#gora prawo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#dol prawo
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#dol lewo
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	#dol prawo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	#gora lewo
+	#gora prawo
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	
+	#gora lewo
+	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, -rect_size, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	
 	if mod=="CROSS":
 		#dol
-		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size/2, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 		#2gora
-		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(rect_size*2, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 		#dol
-		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size/2, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-rect_size, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 		#lewo
 		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, -rect_size/2, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 		#2prawo
@@ -397,6 +418,7 @@ def push_brick(mod="CROSS"):
 		#lewo
 		irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, -rect_size/2, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 		
+	
 		
 	#push
 	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
@@ -411,6 +433,8 @@ def service_position():
 	#print irpos.get_joint_position()
 	if  irpos.get_joint_position() != [ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.48]:
 		irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.48], 10.0)
+		#irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.035), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	
 	else:
 		print "Move along."
 	irpos.tfg_to_joint_position(0.09, 5.0)
@@ -457,48 +481,74 @@ def move_operation():
 		for i2 in i1:
 			if i2[1] == '.':
 				dist=dist+int(i2[0])
-				#print ". dist = " + str(dist)
 				continue
-			#new_brick = choose_block(i2[1],i2[0])
 			dist=dist+(int(i2[0])/2)-1
-			#print "afterbrick dist = " + str(dist)
-			#if new_brick == 'ERROR':
-			#	print "ERROR"
-			#	return 'No brick found'
-			print "taking"
-			print dist
-			print level
+			#print "taking"
+			#print dist
+			#print level
 			#take_operation(new_brick[1],new_brick[2],new_brick[3],dist,i2[1],i2[0])
-			take_operation(i2[1],i2[0],dist,level)
+			result = take_operation(i2[1],i2[0],dist,level)
+			if result != "Done.":
+				print result
+				return
 			print "taking ended"
 			
 			dist=dist+(int(i2[0])/2)+1
 			#print "afterall dist = " + str(dist)
 		level=level+1
 	
-def take_operation(colour, siz, offset=0, heigth=0):#move_x, move_y, rads, 
-	new_brick = choose_block(colour,siz, 'FURTHEST')
+def take_operation(color, siz, offset=0, heigth=0, correction_mod=1):#move_x, move_y, rads, 
+	global NewReds
+	global NewGreens
+	global NewBlues
+	new_brick = choose_block(color,siz, 'FURTHEST')
 	print "New brick to take:" + str(new_brick)
 	if new_brick == 'ERROR':
 		print "ERROR"
 		return 'No brick found'
-	move_x=new_brick[1]
-	move_y=new_brick[2]
-	rads=new_brick[3]
 	#MOVE OVER
-	move_over(move_x, move_y, rads)
-	
-	rospy.sleep(2)
-	new_brick = choose_block(colour,siz, 'CLOSEST')
-	if new_brick == 'ERROR':
-		print "ERROR"
-		return 'No brick found'
 	move_x=new_brick[1]
 	move_y=new_brick[2]
 	rads=new_brick[3]
+	#END MOVE OVER
+	move_over(move_x, move_y, rads)
 	#CORRECT
-	move_over(move_x, move_y, rads, 5.0)
-	grab_brick()
+	for i in range(0,correction_mod):
+		rospy.sleep(5)
+		clear_new()
+		error_count=20
+		for j in range(1,error_count):
+			NewLock.acquire()
+			if color=='r' and NewReds==True:
+				NewLock.release()
+				break
+			elif color=='g' and NewGreens==True:
+				NewLock.release()
+				break
+			elif color=='b' and NewBlues==True:
+				NewLock.release()
+				break
+			print "No new data to correct after "+str(j)+" tries. Retrying in 1 second."
+			print "Requested color " + str(color)
+			print "RGB state " + str(NewReds)+" "+ str(NewGreens)+" "+ str(NewBlues)
+			NewLock.release()
+			rospy.sleep(1)
+			if j==error_count-1:
+				return 'Brick lost during correction.'
+		new_brick = choose_block(color,siz, 'CLOSEST')
+		if new_brick == 'ERROR':
+			print "ERROR"
+			return 'No brick found'
+		move_x=new_brick[1]
+		move_y=new_brick[2]
+		if math.fabs(new_brick[3])>0.08:
+			rads=0
+		else:
+			rads=new_brick[3]
+	
+		move_over(move_x, move_y, rads, 5.0)
+		grab_brick()
+	#END CORRECT
 	rospy.sleep(2)
 	#Bring back the block
 	put_brick(offset, heigth)
@@ -508,54 +558,13 @@ def take_operation(colour, siz, offset=0, heigth=0):#move_x, move_y, rads,
 	service_position()
 	rospy.sleep(2)
 	
-	return "PLACING " + str(colour) + str(siz) + " ENDED"
-	
-def move_operation_2():
-	global first_time
-	global move_x
-	global move_y
-	global rads
-	global BlockPos
-	DataLock.acquire()
-	data = BlockPos
-	DataLock.release()
-	print data
-	
-	print [central_pos(data[1:5]),central_pos(data[5:9])]
-	scale_rotation(data[1:5],data[5:9])
-	if first_time==0:
-		print "FIRST STAGE"
-		move_over(move_x, move_y, rads)
-		first_time=first_time+1
-		rospy.sleep(2)
-		return
-		
-	if first_time==1:
-		print "SECOND STAGE"
-		#correction(move_x, move_y, rads)
-		first_time=first_time+1
-		return
-		
-	if first_time==2:
-		print "THIRD STAGE"
-		grab_brick()
-		rospy.sleep(2)
-		#Bring back the block
-		put_brick()
-		#push
-		push_brick()
-		#return to service position
-		service_position()
-		first_time=first_time+1
-		return
-		
-	if first_time==3:
-		exit()
-		
+	print "PLACING " + str(color) + str(siz) + " ENDED"
+	return "Done."
+
 if __name__ == '__main__':
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	service_position()
-	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.035), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	#irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.035), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback, None, 1)
-	listener()
+	main()
 

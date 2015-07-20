@@ -6,6 +6,7 @@ if __name__ == '__main__':
 	irpos = IRPOS("thIRpOS", "Irp6p", 6, 'irp6p_manager') #z csn
 	
 	irpos.move_to_synchro_position(10.0)
+	irpos.tfg_to_joint_position(0.06, 5.0)
 
 	#poruszanie motorami	
 	#irpos.move_to_motor_position([6.116680896539328, 8.65822935329347, -34.55437759683414, 191.310097771172, 140.33868871754868, 745.4779455482828], 10.0)
