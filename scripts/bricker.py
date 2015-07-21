@@ -24,6 +24,7 @@ global first_time
 first_time=0
 global BlockPos
 global Board
+global NewBoard
 global Overboard
 global Reds
 global Greens
@@ -31,7 +32,10 @@ global Blues
 global NewReds
 global NewGreens
 global NewBlues
+global ReqBoard
 #For init
+ReqBoard=False
+NewBoard=[]
 Overboard=-1
 BlockPos=[]
 Board=[]
@@ -115,7 +119,7 @@ def choose_block(color, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
-			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/4):
 				if founded[3]<0:
 					founded[3]=founded[3]+(math.pi/2)
 				else:
@@ -144,7 +148,7 @@ def choose_block(color, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
-			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/4):
 				if founded[3]<0:
 					founded[3]=founded[3]+(math.pi/2)
 				else:
@@ -177,7 +181,7 @@ def choose_block(color, siz, mod='CLOSEST'):
 			#print founded
 			if founded==[]:
 				continue
-			if siz==2.0 and math.fabs(founded[3])>(math.pi/2):
+			if siz==2.0 and math.fabs(founded[3])>(math.pi/4):
 				if founded[3]<0:
 					founded[3]=founded[3]+(math.pi/2)
 				else:
@@ -209,15 +213,15 @@ def info(x,y, scale_modifier=1):
 		dist_max = dist
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
-	move_y=-((650-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#655
-	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
+	move_y=-((642-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650
+	move_x=((640-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
 		print "ROTATION FOR BOARD HERE"
 		print rot
-		if rot > rot-1.57 and rot-1.57>-1:
-			print "ROTATION FOR BOARD REACHED LIMIT. CHANGING FROM" + str(math.degrees(rot)) + " TO " + str(math.degrees(-rot+1.57))
+		if rot > rot-(math.pi/2) and rot-(math.pi/2)>-1:
+			print "ROTATION FOR BOARD REACHED LIMIT. CHANGING FROM" + str(math.degrees(rot)) + " TO " + str(math.degrees(rot-(math.pi/2)))
 			rot = rot-(math.pi/2)#1.57
 			
 	return [size,move_x,move_y,rot]
@@ -230,10 +234,16 @@ def rearrange(data):
 		return "NO DATA RECEIVED IN PACKAGE"
 	if data[0] == 0:
 		global Board
+		global ReqBoard
 		if Board==[]:
 			print "BOARD DATA HERE"
 			print data
 			Board = info(data[1:5],data[5:9],4)
+		elif ReqBoard:
+			global NewBoard
+			TableLock.acquire()
+			NewBoard = info(data[1:5],data[5:9],4)
+			TableLock.release()
 		return "Received Board data"
 	global Reds
 	global Greens
@@ -336,7 +346,10 @@ def main():
 		if BlockPos != []:
 			DataLock.release()
 			print "BEGINNING MOVE OP"
-			print move_operation()
+			try:
+				print move_operation()
+			except:
+				return
 			print "ENDED MOVE OP"
 			return
 			autostop=0
@@ -377,8 +390,8 @@ def put_brick(offset=0, heigth=0):
 	#heigth=2.3 cm/1.9
 	#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0.03, 0.001, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	irpos.move_rel_to_cartesian_pose_with_contact(14.0, Pose(Point(0, 0, 0.195-(heigth*0.025)), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
-	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.025, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(14.0, Pose(Point(0, 0, 0.195-(heigth*0.023)-0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(-0.03, 0.001, 0), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose_with_contact(3.0, Pose(Point(0, 0, 0.005), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
 	
@@ -442,6 +455,7 @@ def service_position():
 	
 def move_overboard():
 	global Board
+	global NewBoard
 	global Overboard
 	if Overboard==-1:
 		if Board==[]:
@@ -451,6 +465,19 @@ def move_overboard():
 			print "BOARD DATA HERE:"
 			print Board
 			move_over(Board[1], Board[2], Board[3])
+			rospy.sleep(5)
+			for i in range(0,10):
+				global ReqBoard
+				ReqBoard = True
+				TableLock.acquire()
+				if NewBoard != []:
+					move_over(NewBoard[1], NewBoard[2], NewBoard[3])
+					TableLock.release()
+					break
+				TableLock.release()
+				rospy.sleep(1)
+				
+			
 			irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 			rospy.sleep(1)
 			#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
@@ -471,7 +498,10 @@ def move_operation():
 	global Reds
 	global Greens
 	global Blues  
-	schema = model.open_schema()
+	try:
+		schema = model.open_schema()
+	except:
+		raise Exception('Error reading file!')
 	print schema
 	level=0
 	service_position()
@@ -481,12 +511,13 @@ def move_operation():
 		for i2 in i1:
 			if i2[1] == '.':
 				dist=dist+int(i2[0])
+				print "dots dist = " + str(dist)
 				continue
 			dist=dist+(int(i2[0])/2)-1
-			#print "taking"
-			#print dist
-			#print level
-			#take_operation(new_brick[1],new_brick[2],new_brick[3],dist,i2[1],i2[0])
+			print "afterdots dist = " + str(dist)
+			print "taking"
+			print dist
+			print level
 			result = take_operation(i2[1],i2[0],dist,level)
 			if result != "Done.":
 				print result
@@ -494,7 +525,7 @@ def move_operation():
 			print "taking ended"
 			
 			dist=dist+(int(i2[0])/2)+1
-			#print "afterall dist = " + str(dist)
+			print "afterall dist = " + str(dist)
 		level=level+1
 	
 def take_operation(color, siz, offset=0, heigth=0, correction_mod=1):#move_x, move_y, rads, 
