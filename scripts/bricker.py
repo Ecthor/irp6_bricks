@@ -373,8 +373,8 @@ def main():
 
 	
 def move_over(move_x, move_y, rads):
-	print "Move over time " + str(math.fabs(move_x)+math.fabs(move_y)*30+1.0)
-	irpos.move_rel_to_cartesian_pose((math.fabs(move_x)+math.fabs(move_y))*30+1.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	print "Move over time " + str(math.fabs(move_x)+math.fabs(move_y)*10+1.0)
+	irpos.move_rel_to_cartesian_pose((math.fabs(move_x)+math.fabs(move_y))*10+1.0, Pose(Point(move_x, move_y, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	rotate(rads)
 	return
 
@@ -389,9 +389,9 @@ def rotate(rads):
 def grab_brick():
 	irpos.tfg_to_joint_position(0.09, 5.0)
 	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(7.0,7.0,7.0),Vector3(0.0,0.0,0.0)))
-	irpos.move_rel_to_cartesian_pose(2.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))
+	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	irpos.tfg_to_joint_position(0.07, 5.0)
-	irpos.move_rel_to_cartesian_pose_with_contact(4.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(2.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	#irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	service_position()
 	
@@ -402,9 +402,9 @@ def put_brick(offset=0, heigth=0):
 	irpos.move_rel_to_cartesian_pose(math.fabs(offset)*0.5+1.0, Pose(Point(offset*0.015+0.03, toright_offset, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#heigth=2.3 cm/2
 	#irpos.move_rel_to_cartesian_pose(2.0, Pose(Point(0.03, toright_offset, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))
-	irpos.move_rel_to_cartesian_pose(8.0, Pose(Point(0, 0, 0.195-(heigth*0.020)-0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(-0.027, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
-	irpos.move_rel_to_cartesian_pose(3.0, Pose(Point(0, 0, 0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(4.0, Pose(Point(0, 0, 0.195-(heigth*0.020)-0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(-0.027, 0, 0), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, 0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(8.0,8.0,8.0),Vector3(0.0,0.0,0.0)))
 	
 	
 	
@@ -412,7 +412,7 @@ def put_brick(offset=0, heigth=0):
 	print "Open"
 	irpos.tfg_to_joint_position(0.09, 5.0)
 	
-	irpos.move_rel_to_cartesian_pose(2.5, Pose(Point(0, -toright_offset, -0.025), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(1.5, Pose(Point(0, -toright_offset, -0.025), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
 def push_brick(mod="NONE"):
 	#mod CROSS NONE UP
@@ -511,7 +511,7 @@ def move_overboard():
 				rospy.sleep(1)
 				
 			
-			irpos.move_rel_to_cartesian_pose_with_contact(15.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(10.0,10.0,10.0),Vector3(0.0,0.0,0.0)))
+			irpos.move_rel_to_cartesian_pose_with_contact(12.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(10.0,10.0,10.0),Vector3(0.0,0.0,0.0)))
 			rospy.sleep(1)
 			#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
@@ -524,7 +524,7 @@ def move_overboard():
 			return 0
 	else:
 		print "MOVING OVERBOARD"
-		irpos.move_to_joint_position(Overboard, 3)
+		irpos.move_to_joint_position(Overboard, 2)
 		return 1
     
 def move_operation(): 
