@@ -223,7 +223,7 @@ def info(x,y, scale_modifier=1):
 		dist_max = dist
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
-	move_y=-((637-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650 643
+	move_y=-((643-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650 643
 	move_x=((635-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
