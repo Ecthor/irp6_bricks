@@ -224,7 +224,7 @@ def info(x,y, scale_modifier=1):
 		dist_max_pos = [x[3],x[0],y[3],y[0]]
 	#size, dx,dy
 	move_y=-((645-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650 643
-	move_x=((627-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
+	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
@@ -312,7 +312,7 @@ def scale_rotation(y,x):
 			dist_max = dist
 			dist_max_pos = [x[i],x[i+1],y[i],y[i+1]]
 	move_x=((650-central_pos(x))*3.1)/dist_min #655
-	move_y=((653-central_pos(y))*3.1)/dist_min #637 650
+	move_y=((650-central_pos(y))*3.1)/dist_min #637 650
 	move_y=-move_y/100
 	move_x=move_x/100
 	rads = rotation(dist_max_pos)
@@ -388,10 +388,10 @@ def rotate(rads):
     	
 def grab_brick():
 	irpos.tfg_to_joint_position(0.09, 5.0)
-	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(7.0,7.0,7.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	irpos.tfg_to_joint_position(0.07, 5.0)
-	irpos.move_rel_to_cartesian_pose_with_contact(2.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose(2.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	service_position()
 	
@@ -465,7 +465,7 @@ def push_brick(mod="NONE"):
 	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(11.0,11.0,11.0),Vector3(0.0,0.0,0.0)))
 	
 	#go up
-	irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, -0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(2.0, Pose(Point(0, 0, -0.05), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
 	#push
 	irpos.move_rel_to_cartesian_pose_with_contact(7.0, Pose(Point(0, 0, 0.08), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(13.0,13.0,13.0),Vector3(0.0,0.0,0.0)))
@@ -473,11 +473,11 @@ def push_brick(mod="NONE"):
 def service_position(effector=0):
 	#print irpos.get_joint_position()
 	if not effector==1 and not effector==2:
-		irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331,  0.15, 4.7123619308455735, 1.48], 6.0)
+		irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331,  0.15, 4.7123619308455735, 1.48], 3.0)
 		#irpos.move_rel_to_cartesian_pose_with_contact(5.0, Pose(Point(0, 0, 0.035), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
 	else:
-		print "Move along."
+		print "Move to service position."
 	if effector==2:
 		irpos.tfg_to_joint_position(0.07, 5.0)
 		
