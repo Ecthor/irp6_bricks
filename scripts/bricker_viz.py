@@ -9,7 +9,10 @@ import threading
 from Tkinter import Tk
 from tkFileDialog import askopenfilename
 from std_msgs.msg import Float32MultiArray
+import std_msgs.msg
 import model
+import cv2
+import numpy
 
 DataLock = threading.Lock()
 TableLock = threading.Lock()
@@ -202,7 +205,70 @@ def choose_block(color, siz, mod='CLOSEST'):
 		TableLock.release()
 	return 'ERROR'
 	
+	
+def info2(y,x,scale_modifier=1):
+	#info2(x,y, scale_modifier)
+	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
+	dist_min_pos = [x[0],x[1],y[0],y[1]]
+	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
+	dist_max_pos = [x[0],x[1],y[0],y[1]]
+	for i in range(1,3):
+		dist = math.sqrt( (x[i] - x[i+1])**2 + (y[i] - y[i+1])**2 )
+		if dist_min > dist:
+			dist_min=dist
+			dist_min_pos = [x[i],x[i+1],y[i],y[i+1]]
+		if dist_max < dist:
+			dist_max = dist
+			dist_max_pos = [x[i],x[i+1],y[i],y[i+1]]
+	dist = math.sqrt( (x[3] - x[0])**2 + (y[3] - y[0])**2 )
+	size=round(dist_max/dist_min)
+	
+	rot=rotation(dist_max_pos)
+	if scale_modifier==4:
+		if rot > rot-(math.pi/2) and rot-(math.pi/2)>-1:
+			rot = rot-(math.pi/2)
+	if scale_modifier==1 and rot<math.pi/4:
+		print "ELSE"
+		point3 = numpy.array([[0.0159*size,-0.0159,0.01175], 
+					[-0.0159*size,-0.0159,0.01175], 
+					[-0.0159*size,0.0159,0.01175], 
+					[0.0159*size,0.0159,0.01175]], numpy.float32) 
+	elif scale_modifier==1:
+		print "ELSE"
+		point3 = numpy.array([[0.0159,-0.0159*size,0.01175], 
+					[-0.0159,-0.0159*size,0.01175], 
+					[-0.0159,0.0159*size,0.01175], 
+					[0.0159,0.0159*size,0.01175]], numpy.float32) 
+	elif scale_modifier==4:
+		print "BOARD SCALE MOD"
+		print x
+		print y
+		point3 = numpy.array([[0.0636,-0.0636,0.01175], 
+					[-0.0636,-0.0636,0.01175], 
+					[-0.0636,0.0636,0.01175], 
+					[0.0636,0.0636,0.01175]], numpy.float32) 
+	size=size*2
+	point21 = numpy.array([[x[0],y[0]], 
+                  [x[1],y[1]],
+                  [x[2],y[2]],
+                  [x[3],y[3]]], numpy.float32) 
+	point2 = numpy.ascontiguousarray(point21[:,:2]).reshape((4,1,2))
+	campoint = numpy.array([[869.608276,0.000000,638.279177], 
+                  [0.000000,922.489136,512.939969], 
+                  [0.000000,0.000000,1.000000]], numpy.float32) 
+	
+	print "WEKTORY!"
+	found, rvec, tvec = cv2.solvePnP(point3,point2,campoint,numpy.array([0.0, 0.0, 0.0, 0.0]),flags=cv2.CV_P3P)
+	listener = tf.TransformListener()
+	tvec=array(tvec)
+	tvec[0]=float(-tvec[0])
+	tvec[1]=float(tvec[1])-0.05
+	print tvec
+	
+	return [size,tvec[1],tvec[2],rot]
+
 def info(x,y, scale_modifier=1):
+	info2(x,y, scale_modifier)
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
 	dist_min_pos = [x[0],x[1],y[0],y[1]]
 	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
@@ -225,6 +291,8 @@ def info(x,y, scale_modifier=1):
 	#size, dx,dy
 	move_y=-((647-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650 643
 	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
+	print move_x
+	print move_y
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
@@ -394,6 +462,7 @@ def grab_brick():
 	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	irpos.tfg_to_joint_position(0.07, 5.0)
+	publisher.publish("Grabbing")
 	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, -0.05), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	#irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331, 0.1930235079212923, 4.7123619308455735, 1.5707923033898181], 10.0)
 	service_position()
@@ -414,6 +483,7 @@ def put_brick(offset=0, heigth=0):
 	
 	print "Open"
 	irpos.tfg_to_joint_position(0.09, 5.0)
+	publisher.publish("Putting")
 	
 	irpos.move_rel_to_cartesian_pose(1.5, Pose(Point(0, -toright_offset, -0.025), Quaternion(0.0, 0.0, 0.0, 1.0)))#, Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
 	
@@ -495,7 +565,7 @@ def move_overboard():
 	global Overboard
 	if Overboard==-1:
 		if Board==[]:
-			print("No board in sight!")
+			#print("No board in sight!")
 			return -1
 		else:
 			print "BOARD DATA HERE:"
