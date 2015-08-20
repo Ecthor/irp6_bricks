@@ -9,7 +9,7 @@ import time
 
 DataLock = threading.Lock()
 global bricks
-bricks=[[0],[0],[0],[0]]
+bricks=[[],[],[],[]]
 height=0
 global moving
 
@@ -77,7 +77,6 @@ def rearrange(col,data):
 		return
 	bricks[col]=[0]
 	DataLock.release()
-	print data
 	table=eval(data[1])
 	for i in table:
 		marker = Marker()
@@ -114,7 +113,8 @@ def rearrange(col,data):
 			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 				j=j+1
 				time.sleep(0.1)
-				print "exception!"
+				if j==1:
+					print "exception in lookupTransform!"
 				continue
 			break
 		marker.header.frame_id = "/pl_base"
@@ -134,6 +134,7 @@ def rearrange(col,data):
 		
 def grab():
 	global moving
+	global bricks
 	listener = tf.TransformListener()
 	err=0
 	while(err<2):
@@ -145,12 +146,18 @@ def grab():
 			continue
 		break
 	moving = [1,0]
-	print "Bricks"
-	print bricks
 	for i in bricks:
 		for j in i:
-			print "cosen "
+			if j==0:
+				continue
+			print "-----------------------Grabbing this: "
 			print j
+			print "-----------------------With this: "
+			print j.pose
+			print "-----------------------From: "
+			print bricks
+			print "-----------------------Versus this: "
+			print bricks[moving[0]][moving[1]]
 			if (math.fabs(trans[0])+math.fabs(trans[1]))-(math.fabs(j.pose.position.x)+math.fabs(j.pose.position.y))<(math.fabs(trans[0])+math.fabs(trans[1]))-(math.fabs((bricks[moving[0]][moving[1]]).pose.position.x)+math.fabs((bricks[moving[0]][moving[1]]).pose.position.y)):
 				moving=[i,j]
 	(bricks[moving[0]][moving[1]]).pose.position.x=0
@@ -159,6 +166,7 @@ def grab():
 	(bricks[moving[0]][moving[1]]).header.frame_id = "/pl_6"
 def put():
 	global moving
+	global bricks
 	listener = tf.TransformListener()
 	err=0
 	while(err<2):
@@ -169,10 +177,11 @@ def put():
 			time.sleep(0.1)
 			continue
 		break
-		print "Bricks"
+		print "-----------------------Bricks"
 		print bricks
-	print "cosen "
+	print "-----------------------Putting this: "
 	print bricks[moving[0]][moving[0]]
+	print bricks[moving[0]][moving[0]].pose
 	(bricks[moving[0]][moving[1]]).pose.position.x=trans[0]
 	(bricks[moving[0]][moving[1]]).pose.position.y=trans[1]
 	(bricks[moving[0]][moving[1]]).pose.position.z=trans[2]
@@ -204,7 +213,8 @@ def callback(data):
 		if str(data[1])=="rotation":
 			marker.pose.orientation.z=float(data[2])
 			DataLock.acquire()
-			bricks[0][0]=marker
+			#bricks[0][0]=marker
+			bricks[0]=[marker]
 			DataLock.release()
 		if data[1]=="position":
 			get_board_pos()
@@ -231,3 +241,6 @@ if __name__ == '__main__':
 	rospy.Subscriber("rviz_brick_info", String, callback, None, 5)
 	rospy.init_node('register_bricks')
 	main()
+	markerArray = MarkerArray()
+	publisher.publish(markerArray)
+	

@@ -206,43 +206,49 @@ def choose_block(color, siz, mod='CLOSEST'):
 	return 'ERROR'
 	
 	
-def info2(y,x,scale_modifier=1):
-	#info2(x,y, scale_modifier)
-	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_min_pos = [x[0],x[1],y[0],y[1]]
-	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
-	dist_max_pos = [x[0],x[1],y[0],y[1]]
+def info(y,x,scale_modifier=1):
+	dist_min = math.sqrt( (y[0] - y[1])**2 + (x[0] - x[1])**2 )
+	dist_min_pos = [y[0],y[1],x[0],x[1]]
+	dist_max = math.sqrt( (y[0] - y[1])**2 + (x[0] - x[1])**2 )
+	dist_max_pos = [y[0],y[1],x[0],x[1]]
 	for i in range(1,3):
-		dist = math.sqrt( (x[i] - x[i+1])**2 + (y[i] - y[i+1])**2 )
+		dist = math.sqrt( (y[i] - y[i+1])**2 + (x[i] - x[i+1])**2 )
 		if dist_min > dist:
 			dist_min=dist
-			dist_min_pos = [x[i],x[i+1],y[i],y[i+1]]
+			dist_min_pos = [y[i],y[i+1],x[i],x[i+1]]
 		if dist_max < dist:
 			dist_max = dist
-			dist_max_pos = [x[i],x[i+1],y[i],y[i+1]]
-	dist = math.sqrt( (x[3] - x[0])**2 + (y[3] - y[0])**2 )
+			dist_max_pos = [y[i],y[i+1],x[i],x[i+1]]
+	dist = math.sqrt( (y[3] - y[0])**2 + (x[3] - x[0])**2 )
+	if dist_min > dist:
+		dist_min=dist
+		dist_min_pos = [y[3],y[0],x[3],x[i+1]]
+	if dist_max < dist:
+		dist_max = dist
+		dist_max_pos = [y[3],y[0],x[3],x[0]]
 	size=round(dist_max/dist_min)
 	
 	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
 		if rot > rot-(math.pi/2) and rot-(math.pi/2)>-1:
 			rot = rot-(math.pi/2)
+			
 	if scale_modifier==1 and rot<math.pi/4:
-		print "ELSE"
+		#print "ELSE"
 		point3 = numpy.array([[0.0159*size,-0.0159,0.01175], 
 					[-0.0159*size,-0.0159,0.01175], 
 					[-0.0159*size,0.0159,0.01175], 
 					[0.0159*size,0.0159,0.01175]], numpy.float32) 
 	elif scale_modifier==1:
-		print "ELSE"
+		#print "ELSE"
 		point3 = numpy.array([[0.0159,-0.0159*size,0.01175], 
 					[-0.0159,-0.0159*size,0.01175], 
 					[-0.0159,0.0159*size,0.01175], 
 					[0.0159,0.0159*size,0.01175]], numpy.float32) 
 	elif scale_modifier==4:
-		print "BOARD SCALE MOD"
-		print x
-		print y
+		#print "BOARD SCALE MOD"
+		#print x
+		#print y
 		point3 = numpy.array([[0.0636,-0.0636,0.01175], 
 					[-0.0636,-0.0636,0.01175], 
 					[-0.0636,0.0636,0.01175], 
@@ -257,18 +263,18 @@ def info2(y,x,scale_modifier=1):
                   [0.000000,922.489136,512.939969], 
                   [0.000000,0.000000,1.000000]], numpy.float32) 
 	
-	print "WEKTORY!"
+	#print "WEKTORY!"
 	found, rvec, tvec = cv2.solvePnP(point3,point2,campoint,numpy.array([0.0, 0.0, 0.0, 0.0]),flags=cv2.CV_P3P)
 	listener = tf.TransformListener()
 	tvec=array(tvec)
 	tvec[0]=float(-tvec[0])
 	tvec[1]=float(tvec[1])-0.05
-	print tvec
+	#print tvec
 	
-	return [size,tvec[1],tvec[2],rot]
+	return [size,tvec[0],tvec[1],rot]
 
-def info(x,y, scale_modifier=1):
-	info2(x,y, scale_modifier)
+def info2(x,y, scale_modifier=1):
+	test = info2(x,y, scale_modifier)
 	dist_min = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
 	dist_min_pos = [x[0],x[1],y[0],y[1]]
 	dist_max = math.sqrt( (x[0] - x[1])**2 + (y[0] - y[1])**2 )
@@ -291,8 +297,8 @@ def info(x,y, scale_modifier=1):
 	#size, dx,dy
 	move_y=-((647-central_pos(x))*3.1*scale_modifier)/(dist_min*100)#650 643
 	move_x=((632-central_pos(y))*3.1*scale_modifier)/(dist_min*100)#637
-	print move_x
-	print move_y
+	#print move_x
+	#print move_y
 	size=round(dist_max/dist_min)*2
 	rot=rotation(dist_max_pos)
 	if scale_modifier==4:
@@ -301,7 +307,11 @@ def info(x,y, scale_modifier=1):
 		if rot > rot-(math.pi/2) and rot-(math.pi/2)>-1:
 			#print "ROTATION FOR BOARD REACHED LIMIT. CHANGING FROM" + str(math.degrees(rot)) + " TO " + str(math.degrees(rot-(math.pi/2)))
 			rot = rot-(math.pi/2)#1.57
-			
+	print "Delta: "
+	print test[0]-size
+	print test[1]-move_x
+	print test[2]-move_y
+	print test[3]-rot
 	return [size,move_x,move_y,rot]
 	
 def rearrange(data):
