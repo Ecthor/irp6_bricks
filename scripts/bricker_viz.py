@@ -264,14 +264,28 @@ def info(y,x,scale_modifier=1):
                   [0.000000,0.000000,1.000000]], numpy.float32) 
 	
 	#print "WEKTORY!"
-	found, rvec, tvec = cv2.solvePnP(point3,point2,campoint,numpy.array([0.0, 0.0, 0.0, 0.0]),flags=cv2.CV_P3P)
-	listener = tf.TransformListener()
-	tvec=array(tvec)
-	tvec[0]=float(-tvec[0])
-	tvec[1]=float(tvec[1])-0.05
-	#print tvec
+	#listener = tf.TransformListener()	
+	#j=0
+	#while(j<2):
+	#	try:
+	#		(tftrans,tfrot) = listener.lookupTransform('/pl_6', '/p_c_optical_frame', rospy.Time(0))
+	#	except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+	#		j=j+1
+	#		time.sleep(0.1)
+	#		if j==1:
+	#			#print "exception in lookupTransform!"
+	#		continue
+	#	break
+	#print tftrans
+	#print "Rot"
+	#print tfrot
 	
-	return [size,tvec[0],tvec[1],rot]
+	found, rvec, tvec = cv2.solvePnP(point3,point2,campoint,numpy.array([0.0, 0.0, 0.0, 0.0]),flags=cv2.CV_P3P)
+	#tvec=array(tvec)
+	tvec[0][0]=float(-tvec[0][0])#-tftrans[1]
+	tvec[1][0]=float(tvec[1][0])-0.05#-tftrans[0]
+	
+	return [size,tvec[0][0],tvec[1][0],rot]
 
 def info2(x,y, scale_modifier=1):
 	test = info2(x,y, scale_modifier)
@@ -419,6 +433,11 @@ def callback(data):
 	
 def main():
 	autostop=0
+	rospy.sleep(1)
+	publisher.publish("Ready")
+	rospy.sleep(6)
+	publisher.publish("Unready")
+	rospy.sleep(1)
 	while 1:
 		autostop=0
 		while Overboard==-1:
@@ -469,7 +488,7 @@ def rotate(rads):
     	
 def grab_brick():
 	irpos.tfg_to_joint_position(0.09, 5.0)
-	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(9.0,9.0,9.0),Vector3(0.0,0.0,0.0)))
+	irpos.move_rel_to_cartesian_pose_with_contact(9.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 	irpos.move_rel_to_cartesian_pose(1.0, Pose(Point(0, 0, -0.005), Quaternion(0.0, 0.0, 0.0, 1.0)))
 	irpos.tfg_to_joint_position(0.07, 5.0)
 	publisher.publish("Grabbing")
@@ -567,6 +586,7 @@ def service_position(effector=0):
 	elif  effector==1:
 		irpos.move_to_joint_position([ 7.412760409739285e-06, -1.764427006069524, 0.0006186793623569331,  0.15, 4.7123619308455735, 1.48], 10.0)
 		irpos.tfg_to_joint_position(0.09, 5.0)
+		
 	rospy.sleep(2)
 	
 def move_overboard():
@@ -597,14 +617,14 @@ def move_overboard():
 				rospy.sleep(1)
 				
 			
-			irpos.move_rel_to_cartesian_pose_with_contact(12.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(10.0,10.0,10.0),Vector3(0.0,0.0,0.0)))
+			irpos.move_rel_to_cartesian_pose_with_contact(10.0, Pose(Point(0, 0, 0.3), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(12.0,12.0,12.0),Vector3(0.0,0.0,0.0)))
 			rospy.sleep(1)
 			#irpos.move_rel_to_cartesian_pose_with_contact(20.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)), Wrench(Vector3(6.0,6.0,6.0),Vector3(0.0,0.0,0.0)))
 	
-			irpos.move_rel_to_cartesian_pose(5.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)))
-			print "Publishing 2!"
+			irpos.move_rel_to_cartesian_pose(4.0, Pose(Point(0, 0, -0.2), Quaternion(0.0, 0.0, 0.0, 1.0)))
+			#print "Publishing 2!"
 			publisher.publish("Board;position")
-			print "Published 2!"
+			#print "Published 2!"
 	
 			Overboard=irpos.get_joint_position()
 			lst = list(Overboard)
@@ -721,5 +741,6 @@ if __name__ == '__main__':
 	rospy.Subscriber("float32MultiArray", Float32MultiArray, callback, None, 1)
 	publisher = rospy.Publisher('rviz_brick_info', String)
 	main()
+	publisher.publish("End")
 	service_position(2)
 

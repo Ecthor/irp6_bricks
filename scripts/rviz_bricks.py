@@ -12,6 +12,8 @@ global bricks
 bricks=[[],[],[],[]]
 height=0
 global moving
+global ready_flag
+ready_flag = False
 
 
 
@@ -40,7 +42,7 @@ def main():
 
 		# Publish the MarkerArray
 		publisher.publish(markerArray)
-		rospy.sleep(1)
+		rospy.sleep(0.1)
 
 def get_board_pos():
 	global bricks
@@ -60,7 +62,7 @@ def get_board_pos():
 	bricks[0][0].header.frame_id = "/pl_base"
 	bricks[0][0].pose.position.x=trans[0]
 	bricks[0][0].pose.position.y=trans[1]
-	bricks[0][0].pose.position.z=trans[2]-0.54
+	bricks[0][0].pose.position.z=trans[2]-0.5
 	height=trans[2]-0.54
 	for i in bricks:
 		for j in i:
@@ -72,10 +74,10 @@ def get_board_pos():
 def rearrange(col,data):
 	global bricks
 	DataLock.acquire()
-	if bricks[col]!=[0]:
+	if bricks[col]!=[]:
 		DataLock.release()
 		return
-	bricks[col]=[0]
+	bricks[col]=[]
 	DataLock.release()
 	table=eval(data[1])
 	for i in table:
@@ -113,8 +115,8 @@ def rearrange(col,data):
 			except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 				j=j+1
 				time.sleep(0.1)
-				if j==1:
-					print "exception in lookupTransform!"
+				#if j==1:
+				#	print "exception in lookupTransform!"
 				continue
 			break
 		marker.header.frame_id = "/pl_base"
@@ -127,6 +129,8 @@ def rearrange(col,data):
 		marker.pose.orientation.w = 1.0
 		global height
 		marker.pose.position.z=height
+		#print "----------------------Acquiring data lock. adding"
+		#print marker
 		DataLock.acquire()
 		bricks[col].append(marker)
 		DataLock.release()
@@ -146,24 +150,30 @@ def grab():
 			continue
 		break
 	moving = [1,0]
+	curr_col=0
 	for i in bricks:
+		curr_pos=0
 		for j in i:
 			if j==0:
 				continue
-			print "-----------------------Grabbing this: "
-			print j
-			print "-----------------------With this: "
-			print j.pose
-			print "-----------------------From: "
-			print bricks
-			print "-----------------------Versus this: "
-			print bricks[moving[0]][moving[1]]
-			if (math.fabs(trans[0])+math.fabs(trans[1]))-(math.fabs(j.pose.position.x)+math.fabs(j.pose.position.y))<(math.fabs(trans[0])+math.fabs(trans[1]))-(math.fabs((bricks[moving[0]][moving[1]]).pose.position.x)+math.fabs((bricks[moving[0]][moving[1]]).pose.position.y)):
-				moving=[i,j]
+			print "-----------------------Dist to brick : "
+			print (math.fabs((trans[0])-j.pose.position.x)+math.fabs(trans[1]-j.pose.position.y))
+			print "-----------------------Dist to best: "
+			print (math.fabs(trans[0]-(bricks[moving[0]][moving[1]]).pose.position.x)+math.fabs(trans[1]-(bricks[moving[0]][moving[1]]).pose.position.y))
+			
+			if (math.fabs((trans[0])-j.pose.position.x)+math.fabs(trans[1]-j.pose.position.y))<(math.fabs(trans[0]-(bricks[moving[0]][moving[1]]).pose.position.x)+math.fabs(trans[1]-(bricks[moving[0]][moving[1]]).pose.position.y)):
+				moving=[curr_col,curr_pos]
+				print "LEPSZY"
+				print moving
+			curr_pos=curr_pos+1
+		curr_col=curr_col+1
+	print "-----------------------Grabbing color: "
+	print (bricks[moving[0]][moving[1]]).color
+	(bricks[moving[0]][moving[1]]).header.frame_id = "/pl_6"
 	(bricks[moving[0]][moving[1]]).pose.position.x=0
 	(bricks[moving[0]][moving[1]]).pose.position.y=0
-	(bricks[moving[0]][moving[1]]).pose.position.z=-0.56
-	(bricks[moving[0]][moving[1]]).header.frame_id = "/pl_6"
+	(bricks[moving[0]][moving[1]]).pose.position.z=0.328
+	(bricks[moving[0]][moving[1]]).pose.orientation.z=0
 def put():
 	global moving
 	global bricks
@@ -177,21 +187,28 @@ def put():
 			time.sleep(0.1)
 			continue
 		break
-		print "-----------------------Bricks"
-		print bricks
 	print "-----------------------Putting this: "
-	print bricks[moving[0]][moving[0]]
-	print bricks[moving[0]][moving[0]].pose
+	print bricks[moving[0]][moving[1]]
+	print bricks[moving[0]][moving[1]].pose
 	(bricks[moving[0]][moving[1]]).pose.position.x=trans[0]
 	(bricks[moving[0]][moving[1]]).pose.position.y=trans[1]
-	(bricks[moving[0]][moving[1]]).pose.position.z=trans[2]
+	(bricks[moving[0]][moving[1]]).pose.position.z=trans[2]-0.328
+	(bricks[moving[0]][moving[1]]).pose.orientation. z= (bricks[0][0]).pose.orientation.z
 	(bricks[moving[0]][moving[1]]).header.frame_id = "/pl_base"
 
 def callback(data):
 	global bricks
 	global height
+	global ready_flag
 	data=data.data
 	data = data.split(";")
+	
+	if str(data[0])=="Ready":
+		ready_flag=True
+		print "--------------------READY!"
+	if str(data[0])=="Unready":
+		ready_flag=False
+		print "--------------------UNREADY!"
 	if str(data[0])=="Board":
 		#print "Board data"
 		marker = Marker()
@@ -218,26 +235,29 @@ def callback(data):
 			DataLock.release()
 		if data[1]=="position":
 			get_board_pos()
-	if str(data[0])=="Reds":
-		#print "Redds data"
+	if str(data[0])=="Reds" and ready_flag:
+		print "Redds data"
 		rearrange(1,data)
-	if str(data[0])=="Greens":
-		#print "Greens data"
+	if str(data[0])=="Greens" and ready_flag:
+		print "Greens data"
 		rearrange(2,data)
-	if str(data[0])=="Blues":
-		#print "Blues data"
+	if str(data[0])=="Blues" and ready_flag:
+		print "Blues data"
 		rearrange(3,data)
 	if str(data[0])=="Grabbing":
-		grab()
 		print "Grab"
+		grab()
 	if str(data[0])=="Putting":
-		put()
 		print "Put"
+		put()
+	if str(data[0])=="End":
+		print "Ended"
+		bricks=[]
 	return
 
 if __name__ == '__main__':
 	topic = 'visualization_marker_bricks'
-	publisher = rospy.Publisher(topic, MarkerArray)
+	publisher = rospy.Publisher(topic, MarkerArray, queue_size=5)
 	rospy.Subscriber("rviz_brick_info", String, callback, None, 5)
 	rospy.init_node('register_bricks')
 	main()
